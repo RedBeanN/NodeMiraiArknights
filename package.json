@@ -1,0 +1,48 @@
+{
+  "name": "node-mirai-arknights",
+  "version": "0.0.1",
+  "description": "node-mirai-sdk arknights plugin",
+  "author": {
+    "name": "RedBeanN"
+  },
+  "keywords": [
+    "mirai",
+    "arknights"
+  ],
+  "license": "ISC",
+  "main": "dist/index.js",
+  "types": "dist/src/index.d.ts",
+  "scripts": {
+    "build": "webpack --mode production",
+    "dev": "tsnd test/index.ts --dev",
+    "png": "tsnd test/character.ts"
+  },
+  "dependencies": {
+    "axios": "^1.1.2",
+    "mwbot": "^2.0.0",
+    "node-mirai-sdk": "^0.3.5",
+    "node-schedule": "^2.1.0",
+    "progress": "^2.0.3",
+    "sharp": "^0.31.1",
+    "text-to-svg": "^3.1.5"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.19.3",
+    "@babel/preset-env": "^7.19.3",
+    "@types/node": "^18.8.3",
+    "@types/node-schedule": "^2.1.0",
+    "@types/progress": "^2.0.5",
+    "@types/sharp": "^0.31.0",
+    "@types/text-to-svg": "^3.1.1",
+    "babel-loader": "^8.2.5",
+    "clean-webpack-plugin": "^4.0.0",
+    "node-loader": "^2.0.0",
+    "ts-loader": "^9.4.1",
+    "ts-node": "^10.9.1",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^4.8.4",
+    "webpack": "^5.74.0",
+    "webpack-cli": "^4.10.0",
+    "webpack-node-externals": "^3.0.0"
+  }
+}
