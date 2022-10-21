@@ -14,8 +14,8 @@
   "types": "dist/src/index.d.ts",
   "scripts": {
     "build": "webpack --mode production",
-    "dev": "tsnd test/index.ts --dev",
-    "png": "tsnd test/character.ts"
+    "dev": "tsnd --project tsconfig.json test/index.ts --dev",
+    "png": "tsnd --project tsconfig.json test/character.ts"
   },
   "dependencies": {
     "axios": "^1.1.2",
