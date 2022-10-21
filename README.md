@@ -1,5 +1,7 @@
 # Node Mirai Arknights
 
+[![NPM Version](https://img.shields.io/npm/v/node-mirai-arknights)](https://www.npmjs.com/package/node-mirai-arknights)
+
 ## 基于 [mirai](https://github.com/mamoe/mirai) 的明日方舟机器人
 
 ## 指令
@@ -30,6 +32,12 @@
 ## 部署
 
 `NodeMiraiSDK` 的配置请参考 [node-mirai-sdk](https://github.com/RedBeanN/node-mirai)
+
+```sh
+npm i -S node-mirai-arknights
+# or
+yarn add node-mirai-arknights
+```
 
 ```js
 const Mirai = require('node-mirai-sdk')
