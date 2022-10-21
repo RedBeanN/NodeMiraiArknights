@@ -52,7 +52,7 @@ const generatePng = async (withRarity?: number) => {
       top: 175,
     }, {
       input: await sharp(resolve(statics, `../assets/gacha/${char.profession}.png`)).resize(109).toBuffer(),
-      left: 34 + index * 123,
+      left: Math.floor(34 + index * 122.5),
       top: 490,
     }];
     prev.push(res);
@@ -66,7 +66,7 @@ const gacha = new Component('gacha', [{
   rules: [/^十连寻访$/],
   command: true,
   async handler ({ message, senderId, groupId, isGroup, reply, bot, config }) {
-    if (!existsSync(bgPath)) return;
+    if (!existsSync(bgPath)) return reply('数据未初始化，无法进行模拟抽卡');
     const cooldown = config.gacha.cooldown;
     if (isGroup) {
       const cd = cooldowns.get(groupId);

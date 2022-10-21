@@ -34,7 +34,7 @@ export type ArknightsPlugin = {
 export default function NodeMiraiArknights (config: ArknightsConfig | string = {}): ArknightsPlugin {
   const usingConfigPath = typeof config === 'string';
   if (typeof config === 'string') {
-    if (!existsSync(configPath)) throw new Error(`Cannot resolve config path ${config}`);
+    if (!existsSync(config)) throw new Error(`Cannot resolve config path ${config}`);
     configPath = config;
     config = JSON.parse(readFileSync(config, { encoding: 'utf-8' })) as ArknightsConfig;
   }
