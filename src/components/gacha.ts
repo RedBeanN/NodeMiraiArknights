@@ -19,9 +19,9 @@ const gachaCounter = new Map<number, number>();
 
 const bgPath = resolve(statics, '../assets/gacha/background.png');
 const gachaBg = sharp(resolve(statics, '../assets/gacha/background.png'));
-const generatePng = async (withRarity?: number) => {
+export const generatePng = async (withRarity?: number, debugId?: string) => {
   const table = getGachaCharacterTable();
-  const id = Date.now().toString();
+  const id = debugId || Date.now().toString();
   const dist = resolve(tmpDir, id + '.png');
   const chars: Character[] = [];
   if (withRarity) {
@@ -42,8 +42,13 @@ const generatePng = async (withRarity?: number) => {
   const draws: OverlayOptions[][] = await chars.reduce(async (p, char, index) => {
     const prev = await p
     if (!char) return prev;
+    const bg = sharp(resolve(statics, `../assets/gacha/r${char.rarity}.png`)).resize(123);
     const res = [{
-      input: await sharp(resolve(statics, `../assets/gacha/r${char.rarity}.png`)).resize(123).toBuffer(),
+      input: await sharp(resolve(statics, `../assets/gacha/r${char.rarity}.png`)).resize(123).rotate(180, { background: '#0000' }).toBuffer(),
+      left: 27 + index * 123,
+      top: 182,
+    }, {
+      input: await bg.resize(123).toBuffer(),
       left: 27 + index * 123,
       top: 0,
     }, {
@@ -83,6 +88,8 @@ const gacha = new Component('gacha', [{
       withRarity = 5;
     } else {
       gachaCounter.set(senderId, gachaCount + 1);
+      // 加点料，免得老不出六星，第二发1/7，第三发2/7
+      if (Math.random() * 7 < gachaCount) withRarity = 5;
     }
     const dist = await generatePng(withRarity);
     if (isGroup) {
