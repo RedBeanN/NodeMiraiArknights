@@ -1,5 +1,5 @@
 import { readFile, writeFile } from 'fs/promises'
-import { existsSync, writeFileSync, mkdirSync, readFileSync } from 'fs'
+import { existsSync, writeFileSync, mkdirSync, readFileSync, readdir, statSync, rm } from 'fs'
 import { resolve, dirname } from 'path'
 import Progress from 'progress'
 import getUrl from '../utils/getUrl'
@@ -9,7 +9,7 @@ import getMd5 from '../utils/getMd5'
 
 // const repo = 'https://ghproxy.com/https://raw.githubusercontent.com/yuanyan3060/Arknights-Bot-Resource/main/';
 const repo = 'https://raw.fastgit.org/yuanyan3060/Arknights-Bot-Resource/main/';
-import { statics, assets } from '../root'
+import { statics, assets, tmpDir } from '../root'
 import { Job, RecurrenceRule, scheduleJob } from 'node-schedule'
 import { ArknightsConfig } from './config'
 import delay from '../utils/delay'
@@ -266,3 +266,20 @@ export const setSyncSchedule = (config: ArknightsConfig['sync']) => {
     }
   }
 }
+
+// Remove old files in tmpDir
+const clearRule = new RecurrenceRule();
+clearRule.minute = 0;
+scheduleJob('Clear tmpDir', clearRule, () => {
+  const now = Date.now();
+  const oneHour = 60 * 60 * 1000;
+  readdir(tmpDir, (err, files) => {
+    // ignore
+    if (err) return;
+    files.forEach(file => {
+      const p = resolve(tmpDir, file);
+      const { mtimeMs } = statSync(p);
+      if (mtimeMs + oneHour < now) rm(p, { recursive: true }, () => {});
+    });
+  });
+});

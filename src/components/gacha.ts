@@ -47,7 +47,8 @@ const generatePng = async (withRarity?: number) => {
       left: 27 + index * 123,
       top: 0,
     }, {
-      input: await sharp(resolve(statics, `portrait/${char.character}_1.png`)).resize(123).toBuffer(),
+      input: await sharp(resolve(statics, `portrait/${char.character}_1.png`))
+        .resize(123, 365, { fit: 'cover' }).toBuffer(),
       left: 27 + index * 123,
       top: 175,
     }, {

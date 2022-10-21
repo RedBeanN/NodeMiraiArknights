@@ -53,7 +53,7 @@ const resolveCharacterList = () => {
       } else {
         characterIdMap.set(char.name, id);
       }
-      if (char.itemObtainApproach && char.itemObtainApproach === '招募寻访') {
+      if (char.itemObtainApproach && char.itemObtainApproach === '招募寻访' && char.teamId !== 'rainbow') {
         if (gachaTable[char.rarity]) gachaTable[char.rarity].push(char);
         else gachaTable[char.rarity] = [char];
       }
