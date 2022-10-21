@@ -44,9 +44,16 @@ export const generatePng = async (withRarity?: number, debugId?: string) => {
     if (!char) return prev;
     const bg = sharp(resolve(statics, `../assets/gacha/r${char.rarity}.png`)).resize(123);
     const res = [{
-      input: await sharp(resolve(statics, `../assets/gacha/r${char.rarity}.png`)).resize(123).rotate(180, { background: '#0000' }).toBuffer(),
+      input: await bg.clone().rotate(180).resize(123, 600)
+        .composite([{
+          input: Buffer.from([255, 255, 255, 64]),
+          raw: { width: 1, height: 1, channels: 4 },
+          tile: true,
+          blend: 'dest-in'
+        }]).blur(2).toBuffer(),
       left: 27 + index * 123,
-      top: 182,
+      top: 122,
+      premultiplied: true,
     }, {
       input: await bg.resize(123).toBuffer(),
       left: 27 + index * 123,
