@@ -1,6 +1,8 @@
 node_modules
 test
 src
+!dist/src
 tsconfig.json
 webpack.config.js
-root.ts
+*.ts
+!*.d.ts

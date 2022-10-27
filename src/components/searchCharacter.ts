@@ -1,12 +1,10 @@
 import { existsSync, readFileSync, rmSync, statSync, watchFile } from 'fs';
 import { resolve } from 'path';
-import { MessageComponent } from 'node-mirai-sdk';
-import character from '../../pngService/character';
 import { statics, tmpDir } from '../../root';
+import drawImage from '../../utils/drawImage';
 import getMd5 from '../../utils/getMd5';
 import { Character } from '../types';
 import Component from './component';
-const { Image } = MessageComponent;
 
 type searchObject = {
   timestamp: number,
@@ -80,7 +78,7 @@ const generatePng = async (char: Character) => {
     else rmSync(dist);
   }
   try {
-    await character(char, dist);
+    await drawImage('character', char, dist);
     return dist;
   } catch (e) {
     console.log(`[Character] Error generating image: ${e.message || e}`);

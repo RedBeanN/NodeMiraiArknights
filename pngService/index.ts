@@ -1,4 +1,5 @@
 import character from './character';
+import drawGacha from './gacha';
 // import { assets } from '../root';
 
 const done = () => process.exit(0);
@@ -11,6 +12,15 @@ if (process.argv.length > 2) {
     case 'character':
       console.log(ag[4]);
       character(JSON.parse(ag[3]), ag[4], isDev).then(r => {
+        console.log(r);
+      }).then(done).catch(e => {
+        console.error(e);
+        error();
+      });
+      break;
+    case 'gacha':
+      console.log(ag[4]);
+      drawGacha(JSON.parse(ag[3]), ag[4]).then(r => {
         console.log(r);
       }).then(done).catch(e => {
         console.error(e);

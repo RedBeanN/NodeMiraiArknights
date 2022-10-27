@@ -1,11 +1,11 @@
 import sharp, { OverlayOptions } from 'sharp';
-import toSvg from '../utils/toSvg';
+// import toSvg from '../utils/toSvg';
 
 import { Character } from '../src/types'
-import { blue, dark, deepGray, extraLight, gray, light, nealyWhite, white, xs, sm, md, lg, xl, xxl } from './constants';
+import { blue, dark, deepGray, extraLight, gray, light, nearlyWhite, white, xs, sm, md, lg, xl, xxl } from './constants';
 import mapColorText from '../utils/mapColorText';
 import { resolve } from 'path';
-import { statics } from '../root';
+import { assets, statics } from '../root';
 import { existsSync } from 'fs';
 import getSkill from '../utils/getSkill';
 import applyDescParams from '../utils/applyDescParams';
@@ -14,11 +14,14 @@ import getRange from '../utils/getRange';
 import { parseSkillSp } from '../utils/parseSkillSp';
 import { getRangeMatrix } from '../utils/getRangeMatrix';
 import getSkin from '../utils/getSkin';
+import textPng from '../utils/textPng';
 
 const imageWidth = 720;
 const pl = (width: number) => {
   return Math.floor((imageWidth - width) / 2);
 };
+// const watermarkLeft = pl(watermarkObj.width);
+// const watermark = Buffer.from(watermarkObj.svg);
 
 type DrawPart = (
   data: Character,
@@ -32,7 +35,7 @@ type DrawPart = (
  * 绘制带颜色的各种描述, 从 `x` 和 `y` 偏移画起, 使用 `fontSize` 字号(每行
  * 字数已由 `mapColorText` 决定)
  */
-const drawDescs = ({
+const drawDescs = async ({
   descs, draw,
   x = 24,
   y = 0,
@@ -46,16 +49,15 @@ const drawDescs = ({
 }) => {
   let deltaY = 0;
   for (const row of descs) {
-    let deltaX = x;
-    for (const { value, color } of row) {
-      const { svg, width } = toSvg({ text: value, color, fontSize });
-      draw({
-        input: Buffer.from(svg),
-        left: deltaX,
-        top: y + deltaY,
-      });
-      deltaX += width;
-    }
+    const { buffer } = await textPng({
+      text: row,
+      fontSize,
+    })
+    draw({
+      input: buffer,
+      left: x,
+      top: y + deltaY,
+    })
     deltaY += fontSize + 4;
   }
   return deltaY;
@@ -93,27 +95,27 @@ const drawAvatar: DrawPart = async (data, draw, move, gh) => {
     });
     move(height);
     if (skinConf && skinConf.displaySkin.drawerName) {
-      const illus = toSvg({
+      const illus = await textPng({
         text: 'Illust: ' + skinConf.displaySkin.drawerName,
         fontSize: xs,
         color: extraLight,
       });
       let textWidth = illus.width;
       if (skinConf.displaySkin.skinName) {
-        const skinName = toSvg({
+        const skinName = await textPng({
           text: `「${skinConf.displaySkin.skinName}」`,
           fontSize: xs,
           color: extraLight,
         });
         if (textWidth < skinName.width) textWidth = skinName.width;
         draw({
-          input: Buffer.from(skinName.svg),
+          input: skinName.buffer,
           left: 696 - skinName.width - Math.floor((textWidth - skinName.width) / 2),
           top: gh() - 56,
         });
       }
       draw({
-        input: Buffer.from(illus.svg),
+        input: illus.buffer,
         left: 696 - illus.width - Math.floor((textWidth - illus.width) / 2),
         top: gh() - 32,
       });
@@ -162,26 +164,26 @@ const drawHeaders: DrawPart = async (data, draw, move, gh) => {
     }
   }
   if ('rarity' in data) {
-    const { width, svg } = toSvg({
+    const { width, buffer } = await textPng({
       text: '★'.repeat(data.rarity + 1),
       color: extraLight,
       fontSize: xxl,
     })
     draw({
-      input: Buffer.from(svg),
+      input: buffer,
       left: 220 + deltaX,
-      top: gh() + deltaY - 10,
+      top: gh() + deltaY + 8,
     });
     deltaY += 4;
     deltaX += width - 40;
   }
   const tags = [data.itemObtainApproach, ...(data.tagList || [])].filter(i => i);
   for (const text of tags) {
-    const { svg, width, height } = toSvg({ text, color: dark, fontSize: md });
+    const { buffer, width, height } = await textPng({ text, color: dark, fontSize: md });
     const bg = sharp({
       create: {
-        width: width + 4,
-        height: height + 4,
+        width: width + 8,
+        height: height + 8,
         channels: 3,
         background: text === data.itemObtainApproach ? white : extraLight,
       },
@@ -195,11 +197,11 @@ const drawHeaders: DrawPart = async (data, draw, move, gh) => {
       left: 270 + deltaX,
       top: gh() + deltaY,
     }, {
-      input: Buffer.from(svg),
-      left: 272 + deltaX,
-      top: gh() + deltaY + 2,
+      input: buffer,
+      left: 274 + deltaX,
+      top: gh() + deltaY + 4,
     });
-    deltaX += (width + 12);
+    deltaX += (width + 16);
   }
   deltaY += (lg + 12);
   // Descriptions
@@ -243,15 +245,15 @@ const drawHeaders: DrawPart = async (data, draw, move, gh) => {
     }
     const descs = mapColorText(desc, dy ? 36 : 38);
     const descY = descs.length === 1 ? 10 : 0;
-    const descHeight = drawDescs({ descs, draw, x: 220 + dx, y: gh() + deltaY + dy + descY });
+    const descHeight = await drawDescs({ descs, draw, x: 220 + dx, y: gh() + deltaY + dy + descY });
     deltaY += Math.max(48, descHeight) + 4;
   }
   if (data.itemUsage) {
     const descs = mapColorText(data.itemUsage, 40).map(row => row.map(item => {
-      item.color = nealyWhite
+      item.color = nearlyWhite
       return item
     }));
-    const descHeight = drawDescs({ descs, draw, x: 220, y: gh() + deltaY + 4 }) + 8;
+    const descHeight = await drawDescs({ descs, draw, x: 220, y: gh() + deltaY + 4 }) + 8;
     deltaY += descHeight;
   }
   return deltaY;
@@ -262,39 +264,39 @@ const drawHeaders: DrawPart = async (data, draw, move, gh) => {
  */
 const drawAttrs: DrawPart = async (data, draw, move, gh) => {
   if (!data.phases || !data.phases.length) return 0;
-  const { width: titleWidth, svg: titleSvg } = toSvg({
+  const { width: titleWidth, buffer: titleBuffer } = await textPng({
     text: '属性',
     fontSize: lg,
     color: white
   });
   draw({
-    input: Buffer.from(titleSvg),
+    input: titleBuffer,
     left: Math.floor((720 - titleWidth) / 2),
     top: gh() + xs,
   });
   move(xl);
   let dy = gh() + 24;
-  let lineColor = nealyWhite;
-  let widths = new Array(9).fill(128)
-  const drawLine = (
+  let lineColor = nearlyWhite;
+  let widths = new Array(9).fill(144)
+  const drawLine = async (
     tag: string, hp: string, atk: string, def: string, mdef: string,
     respawn: string, block: string, cost: string, atkTime: string,
   ) => {
     const cols = [tag, hp, atk, def, mdef, respawn, block, cost, atkTime];
     for (let i = 0; i < cols.length; i++) {
-      const color = i ? lineColor : nealyWhite;
-      const { width, svg } = toSvg({ text: cols[i], fontSize: sm, color });
-      if ((widths[i] > width + 16) && widths[i] === 128) widths[i] = width + 16;
+      const color = i ? lineColor : nearlyWhite;
+      const { width, buffer, height } = await textPng({ text: cols[i], fontSize: sm, color });
+      if ((widths[i] > width + 24) && widths[i] === 144) widths[i] = width + 24;
       const deltaX = widths.slice(0, i).reduce((p, a) => p + a, 32);
       draw({
-        input: Buffer.from(svg),
+        input: buffer,
         left: Math.floor(deltaX + (widths[i] - width) / 2),
-        top: dy,
+        top: dy - Math.floor(height / 2),
       });
     }
     dy += lg;
   };
-  drawLine('  阶段  ', '生命上限', '攻击', '防御', '法抗', '再部署', '阻挡', '费用', '攻击间隔');
+  await drawLine('  阶段  ', '生命上限', '攻击', '防御', '法抗', '再部署', '阻挡', '费用', '攻击间隔');
   lineColor = blue;
   const getAttrs = (kf: Character['phases']['0']['attributesKeyFrames']['0']['data']) => {
     return {
@@ -313,10 +315,10 @@ const drawAttrs: DrawPart = async (data, draw, move, gh) => {
     const stage = i === 0 ? '满级' : i === 1 ? '精1满级' : '精2满级';
     if (i === 0) {
       const { hp, atk, def, mdef, respawn, block, cost, atkTime } = getAttrs(phase.attributesKeyFrames[0].data);
-      drawLine('初始', hp, atk, def, mdef, respawn, block, cost, atkTime)
+      await drawLine('初始', hp, atk, def, mdef, respawn, block, cost, atkTime)
     }
     const { hp, atk, def, mdef, respawn, block, cost, atkTime } = getAttrs(phase.attributesKeyFrames[phase.attributesKeyFrames.length - 1].data);
-    drawLine(stage, hp, atk, def, mdef, respawn, block, cost, atkTime);
+    await drawLine(stage, hp, atk, def, mdef, respawn, block, cost, atkTime);
   }
   dy += sm;
   move(dy - gh());
@@ -330,13 +332,13 @@ const drawRanges: DrawPart = async (data, draw, move, gh) => {
   if (!data.phases || !data.phases.length) return
   const squareSize = 24;
   // move(sm);
-  const { width: titleWidth, svg: titleSvg } = toSvg({
+  const { width: titleWidth, buffer: titleBuffer } = await textPng({
     text: '攻击范围',
     fontSize: lg,
     color: white
   });
   draw({
-    input: Buffer.from(titleSvg),
+    input: titleBuffer,
     left: Math.floor((720 - titleWidth) / 2),
     top: gh() - xs,
   });
@@ -395,18 +397,18 @@ const drawRanges: DrawPart = async (data, draw, move, gh) => {
       }
       drawed++;
       if (Number(index) < finalGrids.length - 1) draw({
-        input: Buffer.from(toSvg({
+        input: (await textPng({
           text: '→',
           fontSize: xl,
           color: blue,
-        }).svg),
+        })).buffer,
         left: padding + drawed * (squareSize + 2),
         top: gh() - minTop * (squareSize + 2) - (lg / 2) + 4
       })
       drawed += 2;
     }
   }
-  move((maxBottom - minTop) * (squareSize + 2) + 32);
+  move((maxBottom - minTop) * (squareSize + 2) + 40);
 };
 
 /**
@@ -416,12 +418,12 @@ const drawSkills: DrawPart = async (data, draw, move, gh) => {
   if (!data.skills || !data.skills.length) return 0;
   let deltaY = 0;
   draw({
-    input: Buffer.from(toSvg({
+    input: (await textPng({
       text: '技能',
       fontSize: lg,
       color: white
-    }).svg),
-    left: 56,
+    })).buffer,
+    left: 48,
     top: gh(),
   });
   deltaY += xs;
@@ -434,10 +436,10 @@ const drawSkills: DrawPart = async (data, draw, move, gh) => {
     const drawedIcon = existsSync(iconPath);
     let leftHeight = drawedIcon ? 90 : 0;
     if (drawedIcon) {
-      const icon = sharp(iconPath).resize(84);
+      const icon = sharp(iconPath).resize(112);
       draw({
         input: await icon.toBuffer(),
-        left: 40,
+        left: 24,
         top: gh() + deltaY + md + 16,
       });
     }
@@ -447,19 +449,21 @@ const drawSkills: DrawPart = async (data, draw, move, gh) => {
       i.name = `${index ? '[专3]': i.name + ' [满级]'}`;
       return i;
     }).filter(i => i);
-    levels.forEach((level, index) => {
+    await levels.reduce(async (prev, level, index) => {
+      await prev
       // const level = skill.levels.pop();
       const descRaw = applyDescParams(level.description, level.blackboard);
       const { tags, description: spStr } = parseSkillSp(level);
       if (index === levels.length - 1) {
-        tags.forEach(tag => {
-          const { width, height, svg } = toSvg({
+        tags.reduce(async (prev, tag) => {
+          await prev;
+          const { width, height, buffer } = await textPng({
             text: tag.value,
             fontSize: sm,
             color: white,
           });
           const left = Math.floor((160 - width) / 2);
-          const top = Math.floor(gh() + deltaY + sm + leftHeight + 32);
+          const top = Math.floor(gh() + deltaY + sm + leftHeight + 12);
           draw({
             input: {
               create: {
@@ -468,9 +472,9 @@ const drawSkills: DrawPart = async (data, draw, move, gh) => {
               }
             },
             left: left - 8, top: top - 4,
-          }, { input: Buffer.from(svg), left, top });
+          }, { input: buffer, left, top });
           leftHeight += height + 12;
-        });
+        }, Promise.resolve());
         if (level.rangeId && getRange(level.rangeId)) {
           const range = getRange(level.rangeId);
           const { top, left, right, bottom, matrix } = getRangeMatrix(range);
@@ -496,10 +500,10 @@ const drawSkills: DrawPart = async (data, draw, move, gh) => {
       const descs = mapColorText(spStr + descRaw, 44);
       descs.unshift([{
         value: level.name,
-        color: nealyWhite,
+        color: nearlyWhite,
       }])
-      dy += drawDescs({ descs, draw, x: 160, y: gh() + deltaY + dy + md + 4 }) + 8;
-    })
+      dy += await drawDescs({ descs, draw, x: 160, y: gh() + deltaY + dy + md + 4 }) + 8;
+    }, Promise.resolve())
     if (drawedIcon && dy < leftHeight) dy = leftHeight - 16;
     deltaY += dy + 8;
   }
@@ -512,18 +516,18 @@ const drawSkills: DrawPart = async (data, draw, move, gh) => {
 const drawPotentials: DrawPart = async (data, draw, move, gh) => {
   let deltaY = 0;
   draw({
-    input: Buffer.from(toSvg({
+    input: (await textPng({
       text: '潜能' + (data.potentialRanks.length ? '' : '(无)'),
       fontSize: lg,
       color: white
-    }).svg),
+    })).buffer,
     left: 56,
     top: gh(),
   });
   deltaY += lg + 16;
   for (const pot of data.potentialRanks) {
     const descs = mapColorText('- ' + pot.description, 20);
-    deltaY += drawDescs({ descs, draw, x: 40, y: gh() + deltaY }) + 12;
+    deltaY += await drawDescs({ descs, draw, x: 36, y: gh() + deltaY }) + 12;
   }
   return deltaY;
 };
@@ -534,11 +538,11 @@ const drawPotentials: DrawPart = async (data, draw, move, gh) => {
 const drawTalents: DrawPart = async (data, draw, move, gh) => {
   let deltaY = 0;
   draw({
-    input: Buffer.from(toSvg({
+    input: (await textPng({
       text: '天赋' + (!data.talents || !data.talents.length ? '(无)' : '') ,
       fontSize: lg,
       color: white
-    }).svg),
+    })).buffer,
     left: 308,
     top: gh(),
   });
@@ -547,17 +551,17 @@ const drawTalents: DrawPart = async (data, draw, move, gh) => {
   for (const { candidates } of data.talents) {
     for (const talent of uniqueBy(candidates, 'prefabKey', true)) {
       draw({
-        input: Buffer.from(toSvg({
+        input: (await textPng({
           text: talent.name || '-',
           fontSize: md,
-          color: nealyWhite,
-        }).svg),
+          color: nearlyWhite,
+        })).buffer,
         left: 288,
         top: gh() + deltaY,
       });
-      deltaY += (md + 4);
-      const descs = mapColorText(talent.description || '-', 32);
-      deltaY += drawDescs({ descs, draw, x: 288, y: gh() + deltaY }) + 12;
+      deltaY += (md + 8);
+      const descs = mapColorText(talent.description || '-', 34);
+      deltaY += await drawDescs({ descs, draw, x: 288, y: gh() + deltaY }) + 12;
     }
   }
   return deltaY;
@@ -572,13 +576,14 @@ export default async function character (data: Character, dist: string, log: boo
   const move = (height: number) => (imageHeight += (height + 4));
   const getHeight = () => imageHeight;
 
-  const name = toSvg({
+  const name = await textPng({
     text: data.name,
     color: white,
     fontSize: xl,
+    align: 'center',
   });
   draw({
-    input: Buffer.from(name.svg),
+    input: name.buffer,
     left: pl(name.width),
     top: imageHeight,
   });
@@ -607,6 +612,19 @@ export default async function character (data: Character, dist: string, log: boo
   ));
   debug(`Talents: ${data.talents && data.talents[0].candidates.length}`);
 
+  const watermarkObj = textPng({
+    text: 'github.com/RedBeanN/NodeMiraiArknights',
+    color: nearlyWhite,
+    fontSize: sm,
+  });
+  const wm = await watermarkObj;
+  draw({
+    input: wm.buffer,
+    left: pl(wm.width),
+    top: getHeight(),
+  });
+  move(16);
+
   const image = sharp({
     create: {
       width: imageWidth,
@@ -616,5 +634,9 @@ export default async function character (data: Character, dist: string, log: boo
     },
   });
   image.composite(compositeGroup);
-  return image.toFile(dist);
+  image.toFile(dist).then(() => {
+    image.destroy();
+    compositeGroup.splice(0);
+  });
+  return;
 }
