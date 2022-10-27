@@ -39,6 +39,8 @@ const tryRestartApp = () => {
       const val = parseInt(withPid[1].substring(1));
       console.log(`Restart with forever ${val} ${pid}`);
       execSync(`forever restart ${val}`);
+    } else {
+      throw new Error('Pid not found');
     }
   }
   const tryPm2 = () => {
@@ -48,6 +50,8 @@ const tryRestartApp = () => {
       const val = parseInt(withPid[3]);
       console.log(`Restart with pm2 ${val} ${pid}`)
       execSync(`pm2 restart ${val}`);
+    } else {
+      throw new Error('Pid not found');
     }
   }
   const direct = () => {
