@@ -27,7 +27,8 @@ const updater = new Component('updater', [{
       if (!conf.sendProgress) return;
       if (Date.now() - prevTime > 30_000 || comment) {
         if (!comment) prevTime = Date.now();
-        reply(`正在更新：${curr} / ${total} (${(curr / total * 100).toFixed(2)}%) ${comment || ''}`);
+        const info = comment ? '正在更新' : '正在下载';
+        reply(`${info}: ${curr} / ${total} (${(curr / total * 100).toFixed(2)}%) ${comment || ''}`);
       }
     }).then(() => reply('更新完成'))
       .catch(() => reply('更新异常'))
