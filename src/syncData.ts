@@ -7,19 +7,23 @@ import parallel from '../utils/parallel'
 import download from '../utils/download'
 import getMd5 from '../utils/getMd5'
 
-// const repo = 'https://ghproxy.com/https://raw.githubusercontent.com/yuanyan3060/Arknights-Bot-Resource/main/';
-const repo = 'https://raw.fastgit.org/yuanyan3060/Arknights-Bot-Resource/main/';
+const repo = 'https://ghproxy.com/https://raw.githubusercontent.com/yuanyan3060/Arknights-Bot-Resource/main/';
+// const repo = 'https://raw.fastgit.org/yuanyan3060/Arknights-Bot-Resource/main/';
 import { statics, assets, tmpDir } from '../root'
 import { Job, RecurrenceRule, scheduleJob } from 'node-schedule'
 import { ArknightsConfig } from './config'
 import delay from '../utils/delay'
 import { updateRanges } from '../utils/getRange'
 import { updateSkills } from '../utils/getSkill'
-import axios from 'axios'
 
 type OnProgress = (current: number, total: number, comment?: string) => void;
 
-const repoUrl = (p: string) => repo + encodeURIComponent(p).replace(/%2F/g, '/');
+/**
+ * NOTE: ghproxy needs encode twice for `'#'`.
+ * Comment `.replace(/%23/g, '%2523')` if using fastgit.
+ */
+const useFG = repo.startsWith('https://raw.fastgit.org')
+const repoUrl = (p: string) => repo + encodeURIComponent(p).replace(/%2F/g, '/').replace(/%23/g, useFG ? '%23' : '%2523');
 const localPath = (p: string) => resolve(statics, p);
 const getPath = (p: string) => [repoUrl(p), localPath(p)];
 
@@ -169,11 +173,13 @@ const syncSteps = async (onProgress: OnProgress = () => {}) => {
   if (!await syncVersion()) {
     log('No new version was found');
     onProgress(3, 5, '当前版本已是最新, 检查本地资源');
+    await delay(1000);
     await syncGacha(onProgress);
+    await delay(1000);
     return syncProfessions(onProgress);
   }
   onProgress(2, 5, '同步文件列表')
-  await new Promise(resolve => setTimeout(resolve, 1000))
+  await delay(1000);
   const dictObj = await syncFileDict();
   if (!dictObj) {
     log('Cannot sync file dict object');
@@ -191,10 +197,13 @@ const syncSteps = async (onProgress: OnProgress = () => {}) => {
     patches.delete(local);
   }
   await syncGacha(onProgress);
+  await delay(1000);
   await syncProfessions(onProgress);
 };
 
+let isSyncing = false
 const syncData = async (onProgress: OnProgress = () => {}) => {
+  if (isSyncing) return;
   log('Start sync')
   try {
     await syncSteps(onProgress);
@@ -205,9 +214,11 @@ const syncData = async (onProgress: OnProgress = () => {}) => {
     }
   } catch (e) {
     log('Error @ sync', e);
+    isSyncing = false;
     throw e;
   }
   await delay(1000);
+  isSyncing = false;
   return;
 };
 
@@ -252,11 +263,11 @@ export const setSyncSchedule = (config: ArknightsConfig['sync']) => {
           const progress = new Progress(':bar (:curr / :total) :comment', { total: 3 })
           await syncData((curr, total, comment = '') => {
             progress.tick({ curr, total, comment });
-          }).then(() => {
+          }).catch(() => {}).then(() => {
             progress.terminate();
           });
         } else {
-          await syncData();
+          await syncData().catch(() => {});
         }
         if (typeof config.synced === 'function') {
           config.synced(new Date());
